@@ -1,26 +1,124 @@
-<html>
+<!doctype html>
+<html lang="en">
+<head>
+   <meta charset="utf-8" />
+   <meta name="viewport" content="width=device-width,initial-scale=1" />
+   <title>FWI Prediction</title>
+   <style>
+      :root{--accent:#2b78e4;--bg:#f6f8fb;--card:#fff}
+      body{font-family:Segoe UI,Roboto,Arial,sans-serif;background:var(--bg);margin:0;padding:24px}
+      .container{max-width:720px;margin:24px auto;background:var(--card);padding:20px;border-radius:8px;box-shadow:0 6px 18px rgba(11,22,39,0.06)}
+      h1{margin:0 0 12px;font-size:1.6rem;color:#0b2540}
+      form{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+      label{font-size:0.85rem;color:#21314a}
+      input[type=number], select{padding:8px;border:1px solid #d7e0ee;border-radius:6px;width:100%;box-sizing:border-box}
+      .full{grid-column:1/-1}
+      .controls{display:flex;gap:10px;align-items:center}
+      .btn{background:var(--accent);color:#fff;padding:10px 14px;border-radius:6px;border:none;cursor:pointer}
+      .btn[disabled]{opacity:0.6;cursor:default}
+      #result{margin-top:14px;padding:12px;background:#eef6ff;border-left:4px solid var(--accent);border-radius:6px;display:none}
+      .helper{font-size:0.8rem;color:#5b6b80}
+   </style>
+</head>
 <body>
-    <div class="login">
-       <h1>FWI Prediction</h1>
-   
-        <!-- Main Input For Receiving Query to our ML -->
-       <form action="{{ url_for('predict_datapoint')}}" method="post">
-         <input type="text" name="Temperature" placeholder="Temperature" required="required" /><br>
-           <input type="text" name="RH" placeholder="RH" required="required" /><br>
-           <input type="text" name="Ws" placeholder="Ws" required="required" /><br>
-           <input type="text" name="Rain" placeholder="Rain" required="required" /><br>
-           <input type="text" name="FFMC" placeholder="FFMC" required="required" /><br>
-           <input type="text" name="DMC" placeholder="DMC" required="required" /><br>
-           <input type="text" name="ISI" placeholder="ISI" required="required" /><br>
-           <input type="text" name="Classes" placeholder="Classes" required="required" /><br>
-           <input type="text" name="Region" placeholder="Region" required="required" /><br>
-   
-   
-   
-           <button type="submit" class="btn btn-primary btn-block btn-large">Predict</button>
-       </form>
-    <h2>
-       THE FWI prediction is {{result}}
-    </h2>
-   <body>
+   <div class="container">
+      <h1>FWI Prediction</h1>
+      <p class="helper">Enter values (use decimals where appropriate). You can submit normally or use the faster inline prediction.</p>
+
+      <form id="predictForm" action="{{ url_for('predict_datapoint') }}" method="post">
+         <div>
+            <label for="Temperature">Temperature (°C)</label>
+            <input id="Temperature" name="Temperature" type="number" step="0.1" required>
+         </div>
+
+         <div>
+            <label for="RH">Relative Humidity (%)</label>
+            <input id="RH" name="RH" type="number" step="0.1" required>
+         </div>
+
+         <div>
+            <label for="Ws">Wind Speed (m/s)</label>
+            <input id="Ws" name="Ws" type="number" step="0.1" required>
+         </div>
+
+         <div>
+            <label for="Rain">Rain (mm)</label>
+            <input id="Rain" name="Rain" type="number" step="0.01" required>
+         </div>
+
+         <div>
+            <label for="FFMC">FFMC</label>
+            <input id="FFMC" name="FFMC" type="number" step="0.1" required>
+         </div>
+
+         <div>
+            <label for="DMC">DMC</label>
+            <input id="DMC" name="DMC" type="number" step="0.1" required>
+         </div>
+
+         <div>
+            <label for="ISI">ISI</label>
+            <input id="ISI" name="ISI" type="number" step="0.1" required>
+         </div>
+
+         <div>
+            <label for="Classes">Classes</label>
+            <input id="Classes" name="Classes" type="number" step="1" required>
+         </div>
+
+         <div class="full">
+            <label for="Region">Region</label>
+            <select id="Region" name="Region" required>
+               <option value="">Select region</option>
+               <option value="1">Region 1</option>
+               <option value="2">Region 2</option>
+            </select>
+         </div>
+
+         <div class="full controls">
+            <button id="submitBtn" type="submit" class="btn">Predict</button>
+            <span id="spinner" style="display:none">⏳</span>
+         </div>
+      </form>
+
+      <div id="result" aria-live="polite"></div>
+
+      <h2 style="margin-top:18px">Server-rendered result</h2>
+      <div class="helper">THE FWI prediction is {{result}}</div>
+   </div>
+
+   <script>
+      const form = document.getElementById('predictForm');
+      const btn = document.getElementById('submitBtn');
+      const inlineBtn = document.getElementById('predictInline');
+      const spinner = document.getElementById('spinner');
+      const resultBox = document.getElementById('result');
+
+      function showResult(text){
+         resultBox.style.display = 'block';
+         resultBox.textContent = text;
+      }
+
+      inlineBtn.addEventListener('click', async () => {
+         btn.disabled = true; inlineBtn.disabled = true; spinner.style.display = '';
+         const action = form.getAttribute('action');
+         const data = new FormData(form);
+         try{
+            const resp = await fetch(action, {method:'POST', body: data, headers: {'X-Requested-With':'XMLHttpRequest'}});
+            const ct = resp.headers.get('content-type') || '';
+            if(ct.includes('application/json')){
+               const json = await resp.json();
+               showResult('Prediction: ' + (json.result ?? JSON.stringify(json)));
+            } else {
+               // fallback to normal submit if server returns HTML
+               form.submit();
+            }
+         }catch(err){
+            showResult('Error: ' + err.message);
+         }finally{
+            btn.disabled = false; inlineBtn.disabled = false; spinner.style.display = 'none';
+         }
+      });
+   </script>
+</body>
 </html>
