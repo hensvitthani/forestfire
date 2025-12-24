@@ -1,1 +1,68 @@
-<h1> Welcome to the Home Page </h1>
+<!doctype html>
+<html lang="en">
+<head>
+	<meta charset="utf-8" />
+	<meta name="viewport" content="width=device-width,initial-scale=1" />
+	<title>Forest Fire — Home</title>
+	<style>
+		:root{--accent:#2b78e4;--green:#1b9a4a;--bg:#f6f8fb}
+		body{font-family:Segoe UI,Roboto,Arial,sans-serif;background:var(--bg);margin:0;padding:32px;display:flex;align-items:center;justify-content:center;min-height:100vh}
+		.card{background:#fff;padding:28px;border-radius:12px;max-width:880px;width:100%;box-shadow:0 8px 30px rgba(11,22,39,0.06);text-align:left}
+		.hero{display:flex;align-items:center;gap:24px}
+		.hero h1{margin:0;font-size:1.8rem;color:#0b2540}
+		.lead{color:#51607a;margin-top:8px}
+		.actions{margin-top:18px;display:flex;gap:12px}
+		.btn{padding:10px 14px;border-radius:8px;border:none;cursor:pointer;font-weight:600}
+		.btn.primary{background:var(--accent);color:#fff}
+		.btn.ghost{background:transparent;border:1px solid #d7e0ee;color:#21314a}
+		.btn.info{background:var(--green);color:#fff}
+		.small{font-size:0.9rem;color:#5b6b80}
+
+		/* modal */
+		.modal-backdrop{position:fixed;inset:0;background:rgba(6,12,28,0.45);display:none;align-items:center;justify-content:center}
+		.modal{background:#fff;padding:18px;border-radius:8px;max-width:560px;width:90%;box-shadow:0 12px 40px rgba(11,22,39,0.12)}
+		.modal h3{margin:0 0 8px}
+		.modal p{margin:0 0 12px;color:#475569}
+		.modal .foot{display:flex;justify-content:flex-end;gap:8px}
+	</style>
+</head>
+<body>
+	<main class="card">
+		<section class="hero">
+			<div>
+				<h1>Forest Fire Risk — Fast FWI Predictions</h1>
+				<p class="lead">Quickly estimate the Forest Fire Weather Index (FWI) from a few meteorological inputs. Use the interactive predictor to try your own values.</p>
+				<div class="actions">
+					<a href="{{ url_for('predict_datapoint') }}"><button class="btn primary">Go to Predictor</button></a>
+					<button id="openInfo" class="btn ghost">How it works</button>
+					<a href="{{ url_for('index') }}"><button class="btn info">Refresh</button></a>
+				</div>
+				<p class="small">Tip: Click "Go to Predictor" for the full form or use the inline predictor on the predictor page for instant JSON responses.</p>
+			</div>
+		</section>
+	</main>
+
+	<div id="backdrop" class="modal-backdrop" role="dialog" aria-hidden="true">
+		<div class="modal" role="document" aria-labelledby="modalTitle">
+			<h3 id="modalTitle">How predictions work</h3>
+			<p>Enter weather features (Temperature, RH, Wind Speed, Rain, FFMC, DMC, ISI, etc.). The model returns an FWI score indicating potential fire risk.</p>
+			<div class="foot">
+				<a href="{{ url_for('predict_datapoint') }}"><button class="btn primary">Try Predictor</button></a>
+				<button id="closeModal" class="btn ghost">Close</button>
+			</div>
+		</div>
+	</div>
+
+	<script>
+		const openInfo = document.getElementById('openInfo');
+		const backdrop = document.getElementById('backdrop');
+		const closeModal = document.getElementById('closeModal');
+		function showModal(){backdrop.style.display='flex';backdrop.setAttribute('aria-hidden','false');}
+		function hideModal(){backdrop.style.display='none';backdrop.setAttribute('aria-hidden','true');}
+		openInfo && openInfo.addEventListener('click', showModal);
+		closeModal && closeModal.addEventListener('click', hideModal);
+		backdrop && backdrop.addEventListener('click', (e)=>{ if(e.target===backdrop) hideModal(); });
+		document.addEventListener('keydown', (e)=>{ if(e.key==='Escape') hideModal(); });
+	</script>
+</body>
+</html>
